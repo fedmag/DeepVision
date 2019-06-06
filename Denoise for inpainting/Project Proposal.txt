@@ -1,0 +1,46 @@
+Team:
+Federico Maggiore (MSc Economics 3566875)
+Sanhanat Deesamutara(MSc Scientific Computing 3571652)
+
+Tasks:
+preprocessing (Sanhanat Deesamutara)
+modeling / training (Federico Maggiore
+visualization (Sanhanat Deesamutara)
+
+Problem definition:
+One of the most succeseful way of dealing with noise is training a model on an noisy image created by us 
+starting from a clear one. The idea is to apply the same concept in order to repair a damaged image. I think 
+this might be an interesting topic for image reconstruction (for example a lake with a bulinding in front of it) or also for actually damaged images.
+PCA represens our starting approach and depending on the success we also plan to use different methods.
+
+
+Dataset:
+Animals-10(https://www.kaggle.com/alessiocorrado99/animals10)
+We looked for a "consistent" dataset. 
+Given the approach we are going to use theoretically we might have almost any kind of dataset, but since we are
+not sure about the results we thought that simplification may be a desiderable feature. Time permitting we'll 
+try a more complicated Dataset like Google Landmarks V2.
+In order to start simple we will probably start with a gray-scale transformation of the dataset.
+
+Approach:
+what we would like to do is: given any pic in our dataset we want to apply some geometrical shapes (such as rectangles or circles etc.) in random areas of the picture, repeating this process a couple of time s.t. our final training set is going to be two or three times bigger than our starting one. We will then try to train our model using an algorithm for denoising, feeding the model with the "damaged" images and giving as GT the original "well defined" image. So, in the end, the final goal of our project is to try "inpainting by denoising".
+
+Evalutation:
+Since our perfect result would be to get exactly the GT image given any of the damaged image as input, we are going to use the "distance" between the GT and our result as metric. Which kind of distance is the more  appropriate is not decided yet, we found some papers about it and we still have to figure it out. 
+
+Expected results:
+We expect the model to work fine when the "damage" has a shape that differs significantly from the "general shape"
+of the picture, i.e. in a picture of the ocean a black rectangle might be easier to correct. 
+Given our dataset (animals) we also expect it to be generally better are correcting NOT rounded shapes because 
+in nature rounded shapes are more common. There is also going to be a relation with the color of the "stain" of coures.
+Moreover we expect that the more defined the shape of the stain the easier to correct.
+As we stated before, in case of decent results, there is a lot of space for improvements and/or refinements. We can make the applied "stains" more complex, we can use a more diverse dataset, we can use 3 channels images and much more.
+
+Hardware:
+for the project we are going to use a desktop pc:
+Intel i7 6700k - 4 GHz
+Nvidia GTX 1080
+16 g of RAM DDR4 - 2400 Mhz
+
+Presentation date:
+Since Federico is not going to be in Germany till the 20th we would prefer having the presentation on the 22nd. 
