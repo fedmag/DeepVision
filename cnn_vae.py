@@ -1,3 +1,4 @@
+
 import numpy as np
 import pandas as pd
 import gc
@@ -65,55 +66,65 @@ x, y = sample
 # imshow(x)
 # imshow(y)
 
-data_loader = D.DataLoader(imgs, batch_size=128, shuffle=True, num_workers=0)
+data_loader = D.DataLoader(imgs, batch_size=256, shuffle=True, num_workers=0)
 
 
 class Net(nn.Module):
     def __init__(self, num_latent):
         super().__init__()
         
-        #So here we will first define layers for encoder network
-        self.encoder = nn.Sequential(nn.Conv2d(1, 50, 3, padding=1),    # 100*100*30
-                                     nn.MaxPool2d(2, 2),                # 50*50*30
-                                     nn.BatchNorm2d(50),
-                                     nn.ReLU(True),
-                                     nn.Conv2d(50, 100, 3, padding=1),   # 50*50*50
-                                     nn.MaxPool2d(2, 2),                # 25*25*50
-                                     nn.BatchNorm2d(100),
-                                     nn.ReLU(True),
-                                     nn.Conv2d(100, 200, 3, padding=1),   # 25*25*75
-                                     nn.ReLU(True),
-                                     nn.Conv2d(200, 350, 4, padding=1),  # 24*24*75
-                                     nn.MaxPool2d(2, 2),                # 12*12*100
-                                     nn.Conv2d(350, 500, 3),            # 10*10*200
-                                     nn.MaxPool2d(2, 2))                # 5*5*200
+        #So here we will first define layers for encoder network (VGG_16)
+        self.encoder = nn.Sequential(nn.Conv2d(1, 64, 3),    # 98*98*64
+                                     nn.Conv2d(64, 64, 3),   # 96*96*64   
+                                     nn.MaxPool2d(2, 2),     # 48*48*64
+                                     nn.BatchNorm2d(64),
+                                     nn.LeakyReLU(True),
+                                     nn.Conv2d(64, 128, 3),    # 46*46*128
+                                     nn.Conv2d(128, 128, 3),   # 44*44*128
+                                     nn.MaxPool2d(2, 2),       # 22*22*128
+                                     nn.BatchNorm2d(128),
+                                     nn.LeakyReLU(True),
+                                     nn.Conv2d(128, 256, 3),   # 20*20*256
+                                     nn.Conv2d(256, 256, 3),   # 18*18*256
+                                     nn.Conv2d(256, 256, 3),   # 16*16*256
+                                     nn.MaxPool2d(2, 2),       # 8*8*256
+                                     nn.BatchNorm2d(256),
+                                     nn.LeakyReLU(True),
+                                     nn.Conv2d(256, 512, 3),   # 6*6*512
+                                     nn.Conv2d(512, 512, 3),   # 4*4*512
+                                     nn.BatchNorm2d(512))
+                                    
 
 
         #These two layers are for getting logvar and mean
-        self.fc1 = nn.Linear(12500, 6000)
+        self.fc1 = nn.Linear(8192, 4096)
         # self.fc2 = nn.Linear(6000, 3000)
-        self.mean = nn.Linear(6000, num_latent)
-        self.var = nn.Linear(6000, num_latent)
+        self.mean = nn.Linear(4096, num_latent)
+        self.var = nn.Linear(4096, num_latent)
         
         #######The decoder part
         #This is the first layer for the decoder part
-        self.expand = nn.Linear(num_latent, 6000)
+        self.expand = nn.Linear(num_latent, 4096)
         # self.fc3 = nn.Linear(3000, 6000)
-        self.fc4 = nn.Linear(6000, 12500) # this represents a 5*5*200 cube
-        self.decoder = nn.Sequential(nn.ConvTranspose2d(500, 200, 3, stride=2), # 11*11*100
-                                     nn.BatchNorm2d(200),
-                                     nn.ConvTranspose2d(200, 100, 3, stride=2), # 23*23*50
-                                     nn.BatchNorm2d(100),
-                                     nn.ConvTranspose2d(100, 35, 6, stride=2),  # 50*50*25
-                                     nn.BatchNorm2d(35),
-                                     nn.ConvTranspose2d(35, 1, 2, stride=2))  # 100*100*1
+        self.fc4 = nn.Linear(4096, 8192) # this represents a 4*4*512 cube
+        self.decoder = nn.Sequential(nn.ConvTranspose2d(512, 256, 4, stride=2), # 10*10*256
+                                     nn.BatchNorm2d(256),
+                                     nn.LeakyReLU(True),
+                                     nn.ConvTranspose2d(256, 128, 5, stride=2), # 23*23*128
+                                     nn.BatchNorm2d(128),
+                                     nn.LeakyReLU(True),
+                                     nn.ConvTranspose2d(128, 64, 4, stride=2),  # 48*48*64
+                                     nn.BatchNorm2d(64),
+                                     nn.LeakyReLU(True),
+                                     nn.ConvTranspose2d(64, 1, 6, stride=2))    # 100*100*1
+                                     
 
         
     def enc_func(self, x):
         #here we will be returning the logvar(log variance) and mean of our network
         x = self.encoder(x)
         # print(x.shape)
-        x = x.view([-1, 12500])
+        x = x.view([-1, 8192])
         x = self.fc1(x)
         # x = self.fc2(x)
         
@@ -126,19 +137,18 @@ class Net(nn.Module):
         z = self.expand(z)
         # z = F.dropout2d(self.fc3(z), 0.2)
         z = self.fc4(z)
-        z = z.view([-1, 500, 5, 5])
+        z = z.view([-1, 512, 4, 4])
         
         out = self.decoder(z)
         out = torch.sigmoid(out)
+        # print(out.shape)
         return out
     
     def get_hidden(self, mean, logvar):
-        if self.training:
-            std = torch.exp(0.5*logvar)   # get std
-            noise = torch.randn_like(mean)   # get the noise of standard distribution
-            return noise.mul(std).add_(mean)
-        else:
-            return mean
+        std = torch.exp(0.5*logvar)   # get std
+        noise = torch.randn_like(mean)   # get the noise of standard distribution
+        return noise.mul(std).add_(mean)
+
     
     def forward(self, x):
         mean, logvar = self.enc_func(x)
@@ -148,24 +158,23 @@ class Net(nn.Module):
         return out, mean, logvar
 
 def VAE_loss(x_recon, y, mean, logvar):
-    base_loss = nn.BCEWithLogitsLoss()
-    ### Trying to solve the error with BCE loss 
-    # y = torch.sigmoid(y)   
-    # x_recon = torch.sigmoid(x_recon)
+    
+    base_loss = nn.MSELoss()
+
     ###########################################
-    # eps = 1e-8
-    bce_loss = base_loss(x_recon, y)
+    mse_loss = base_loss(x_recon, y)
     # Scale the following losses with this factor
     scaling_factor = x_recon.shape[0]*x_recon.shape[1]*x_recon.shape[2]*x_recon.shape[3]
     
     ####Now we are gonna define the KL divergence loss
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    kl_loss = -0.05 * torch.sum(1 + logvar - mean**2 - torch.exp(logvar))
+    kl_loss = -0.005 * torch.sum(1 + logvar - mean**2 - torch.exp(logvar))
     kl_loss /= scaling_factor    # trying without this values
     
-    return bce_loss + kl_loss
+    return mse_loss + kl_loss
 
 def train(trainloader, epochs, model, device, optimizer):
+    avg_losses = []
     for epoch in range(epochs):
         start = time.time()
         model.train()
@@ -180,28 +189,37 @@ def train(trainloader, epochs, model, device, optimizer):
             out = out.to(device)
             
             ### VAE loss
-            # loss = VAE_loss(out, images, mean, logvar)
-            
-            ### MSE loss
-            criterion = nn.MSELoss()
-            loss = criterion(out, images)
+            loss = VAE_loss(out, target, mean, logvar)
 
             # Backpropagation and optimization
             loss.backward()
             train_loss += loss.item()
             optimizer.step()
-            
-            
-            # if i % 100 == 0:
-            #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, i * len(data_loader), 
-            #         len(data_loader.dataset), 100. * i / len(data_loader), loss.item()))
-        
+
+        ### Statistics   
+        avg_losses.append(train_loss/len(trainloader))
         end = time.time()  
         elasped_time = (end - start)/60          
-        print('========================> Epoch: {} Average loss: {:.4f}'.format(epoch, train_loss / i))
+        print('========================> Epoch: {} Average loss: {:.4f}'.format(epoch, train_loss / len(data_loader)))
         print("========================> This epoch took {:4f} mins to be completed".format(elasped_time))
+        
+        # Printing images
+        with torch.no_grad():
+            sample_dir = 'samples'
+            if not os.path.exists(sample_dir):
+                os.makedirs(sample_dir)
+            test_image = Image.open('C:\\Users\\Federico\\Desktop\\Computer Science\\Deep Vision\\Denoise for inpainting\\Code\\occulted_output\\20_percent\\100\\100\\ea34b00f2ff5033ed1584d05fb1d4e9fe777ead218ac104497f5c978a7ebb0bb_640.jpg')
+            test_image = torchvision.transforms.ToTensor()(test_image)
+            test_image = test_image.view([1, 1, 100, 100]).to(device)
+            test_reconst, _ , X = model(test_image)
+            torchvision.utils.save_image(test_reconst.data, os.path.join(sample_dir, 'reconst-{}.png'.format(epoch)))
+    
+    # Plotting the loss function
+    plt.plot(avg_losses)
+
+
 ######Setting all the hyperparameters
-epochs = 50
+epochs = 45
 num_latent = 1500
 
 model = Net(num_latent)
@@ -219,23 +237,36 @@ train(data_loader, epochs, model, device, optimizer)
 ############ Testing #############
 ##################################
 
-# Create a directory if not exists
+# Create a directory does not exists
 sample_dir = 'samples'
 if not os.path.exists(sample_dir):
     os.makedirs(sample_dir)
 
-# Getting a never seen image 
-test_x = glob.glob(osp.join(path_x, '*.jpg'))
 
-for j in range (0,10):
-    i = np.random.randint(0,len(test_x))
-    test_image = Image.open(test_x[i])
 
-    # Try reconstructing on test data
-    with torch.no_grad():
-        test_image = torchvision.transforms.ToTensor()(test_image)
-        test_image = test_image.view([1, 1, 100, 100]).to(device)
-        test_reconst, mean, logvar = model(test_image)
+# # Getting a never seen image 
+# test_x = glob.glob(osp.join(path_x, '*.jpg'))
 
-        torchvision.utils.save_image(test_image.data, os.path.join(sample_dir, 'original-{}-{}_mse.png'.format(epochs+1, j)))
-        torchvision.utils.save_image(test_reconst.data, os.path.join(sample_dir, 'reconst-{}-{}_mse.png'.format(epochs+1, j)))
+# for j in range (0,10):
+#     i = np.random.randint(0,len(test_x))
+#     test_image = Image.open(test_x[i])
+
+#     # Try reconstructing on test data
+#     with torch.no_grad():
+#         test_image = torchvision.transforms.ToTensor()(test_image)
+#         test_image = test_image.view([1, 1, 100, 100]).to(device)
+#         test_reconst, mean, logvar = model(test_image)
+
+#         torchvision.utils.save_image(test_image.data, os.path.join(sample_dir, 'original-{}-{}_mse.png'.format(epochs+1, j)))
+#         torchvision.utils.save_image(test_reconst.data, os.path.join(sample_dir, 'reconst-{}-{}_mse.png'.format(epochs+1, j)))
+
+######### SIMPLE 
+# Try reconstructing on test data
+
+test_image = Image.open('C:\\Users\\Federico\\Desktop\\Computer Science\\Deep Vision\\Denoise for inpainting\\Code\\occulted_output\\20_percent\\100\\100\\ea34b00f2ff5033ed1584d05fb1d4e9fe777ead218ac104497f5c978a7ebb0bb_640.jpg')
+test_image = torchvision.transforms.ToTensor()(test_image)
+test_image = test_image.view([1, 1, 100, 100]).to(device)
+test_reconst, _ , X = model(test_image)
+
+torchvision.utils.save_image(test_image.data, os.path.join(sample_dir, 'original-{}.png'.format(epochs)))
+torchvision.utils.save_image(test_reconst.data, os.path.join(sample_dir, 'reconst-{}.png'.format(epochs)))
