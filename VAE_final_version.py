@@ -17,9 +17,10 @@ import matplotlib.pyplot as plt
 import time
 import pytorch_ssim
 
+# path_x = directory occulted inputs, path_y = directory ground truth 
+path_x = ''
+path_y = ''
 
-path_x = 'C:\\Users\\Federico\\Desktop\\Computer Science\\Deep Vision\\Denoise for inpainting\\Code FACES\\occulted_output\\20_percent\\100\\'
-path_y = 'C:\\Users\\Federico\\Desktop\\Computer Science\\Deep Vision\\Denoise for inpainting\\Code FACES\\groundtruth_output\\resized_100\\'
 
 class Data(D.Dataset):
     """Creates a data-set"""
@@ -62,8 +63,8 @@ i = np.random.randint(0,len(imgs))
 sample = imgs[i]
 x, y = sample
 
-# imshow(x)
-# imshow(y)
+imshow(x)
+imshow(y)
 
 data_loader = D.DataLoader(imgs, batch_size=32, shuffle=True, num_workers=0)
 
@@ -220,8 +221,8 @@ def train(trainloader, start_epochs, epochs, model, device, optimizer, avg_losse
                 test_dir = 'test'
                 if not os.path.exists(test_dir):
                     os.makedirs(test_dir)
-                # Getting a never seen images 
-                path_test_x = 'C:\\Users\\Federico\\Desktop\\Computer Science\\Deep Vision\\Denoise for inpainting\\Code FACES\\occulted_output\\20_percent\\test\\'
+                # Getting a never seen images, path_test_x = path with occulted pics never seen by the alg 
+                path_test_x = ''
                 test_x = glob.glob(osp.join(path_test_x, '*.png'))
 
                 for j in range (0,10):
@@ -248,7 +249,7 @@ def train(trainloader, start_epochs, epochs, model, device, optimizer, avg_losse
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'average losses' : avg_losses
-            }, 'checkpoint-{}-1500-changing.pth.tar'.format(epochs))
+            }, 'checkpoint-{}-1500.pth.tar'.format(epochs))
 
 
 
@@ -280,8 +281,8 @@ train(data_loader,start_epochs, epochs, model, device, optimizer, avg_losses)
 ################# TESTING #################
 ############################################
 # Getting a never seen image 
-path_x = 'C:\\Users\\Federico\\Desktop\\Computer Science\\Deep Vision\\Denoise for inpainting\\Code FACES\\occulted_output\\20_percent\\test\\'
-test_x = glob.glob(osp.join(path_x, '*.png'))
+path_test_x = ''
+test_x = glob.glob(osp.join(path_test_x, '*.png'))
 sample_dir = 'control_never_seen'
 if not os.path.exists(sample_dir):
     os.makedirs(sample_dir)
@@ -304,7 +305,7 @@ for i in range (0,len(test_x)):
 #     sample_dir = 'samples'
 #     if not os.path.exists(sample_dir):
 #         os.makedirs(sample_dir)
-#     test_image = Image.open('C:\\Users\\Federico\\Desktop\\Computer Science\\Deep Vision\\Denoise for inpainting\\Code FACES\\occulted_output\\20_percent\\100\\00239.png')
+#     test_image = Image.open(path_x_test + '\\100\\00239.png')
 
 #     test_image = torchvision.transforms.ToTensor()(test_image)
 #     test_image = test_image.view([1, 1, 100, 100]).to(device)
