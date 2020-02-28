@@ -1,3 +1,3 @@
 # DeepVision
 Deep Vision (Computer Science) 2019
-![picture](DeepVision/Images/example-1.png)
+![picture](https://github.com/fedmag/DeepVision/blob/master/Images/example-1.png)
