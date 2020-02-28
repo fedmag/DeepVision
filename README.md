@@ -1,3 +1,3 @@
 # DeepVision
 Deep Vision (Computer Science) 2019
-![picture](images/example-1.png)
+![picture](DeepVision/Images/example-1.png)
