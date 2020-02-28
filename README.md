@@ -1,3 +1,3 @@
 # DeepVision
 Deep Vision (Computer Science) 2019
-![picture](C:/Users/maggi/Desktop/temp/example-1.png)
+![picture](images/example-1.png)
