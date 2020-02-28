@@ -8,9 +8,9 @@ from torchvision.utils import save_image
 import torch.nn.functional as F
 
 #### Data
-dir1 = 'C:\\Users\\Federico\\Desktop\\Computer Science\\Deep Vision\Denoise for inpainting\\Code\\occulted_output\\20_percent\\100\\'
+dir1 = '' # occulted images
 
-dir2 = 'C:\\Users\\Federico\\Desktop\\Computer Science\\Deep Vision\Denoise for inpainting\\Code\\groundtruth_output\\resized_100\\'
+dir2 = '' # groundtruth images
 
 
 
